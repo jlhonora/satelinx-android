@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">Satelinx</string>
+    <string name="done">Done</string>
+    <string name="retry">Retry</string>
+    <string name="login">Log in</string>
+</resources>

@@ -1,7 +1,6 @@
 package com.satelinx.satelinx;
 
 import android.app.Activity;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
@@ -13,13 +12,19 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 import com.dd.CircularProgressButton;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.satelinx.satelinx.events.AuthEvent;
 import com.satelinx.satelinx.events.AuthFailedEvent;
 import com.satelinx.satelinx.events.AuthRequestEvent;
+import com.satelinx.satelinx.events.AuthSuccessEvent;
 import com.satelinx.satelinx.helpers.SatelinxSession;
+import com.satelinx.satelinx.models.User;
+import com.satelinx.satelinx.models.typeAdapters.UserTypeAdapter;
 
 import de.greenrobot.event.EventBus;
 import retrofit.RestAdapter;
+import retrofit.converter.GsonConverter;
 
 
 /**
@@ -29,23 +34,10 @@ public class LoginActivity extends Activity {
 
     public static final String TAG = LoginActivity.class.getSimpleName();
 
-    /**
-     * A dummy authentication store containing known user names and passwords.
-     * TODO: remove after connecting to a real authentication system.
-     */
-    private static final String[] DUMMY_CREDENTIALS = new String[]{
-            "foo@example.com:hello", "bar@example.com:world"
-    };
-    /**
-     * Keep track of the login task to ensure we can cancel it if requested.
-     */
-    private UserLoginTask mAuthTask = null;
-
     // UI references.
     private EditText mUsernameView;
     private EditText mPasswordView;
-    private View mProgressView;
-    private View mLoginFormView;
+    private CircularProgressButton mUsernameSignInButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,7 +59,7 @@ public class LoginActivity extends Activity {
             }
         });
 
-        final CircularProgressButton mUsernameSignInButton = (CircularProgressButton) findViewById(R.id.login_button);
+        mUsernameSignInButton = (CircularProgressButton) findViewById(R.id.login_button);
         mUsernameSignInButton.setIndeterminateProgressMode(true);
         mUsernameSignInButton.setOnClickListener(new OnClickListener() {
             @Override
@@ -76,8 +68,6 @@ public class LoginActivity extends Activity {
             }
         });
 
-        mLoginFormView = findViewById(R.id.login_form);
-        mProgressView = findViewById(R.id.login_progress);
     }
 
     /**
@@ -86,12 +76,6 @@ public class LoginActivity extends Activity {
      * errors are presented and no actual login attempt is made.
      */
     public void attemptLogin() {
-        if (mAuthTask != null) {
-            return;
-        }
-
-
-        final CircularProgressButton mUsernameSignInButton = (CircularProgressButton) findViewById(R.id.login_button);
         mUsernameSignInButton.setProgress(0);
         mUsernameSignInButton.setProgress(1);
 
@@ -105,9 +89,6 @@ public class LoginActivity extends Activity {
 
         boolean cancel = false;
         View focusView = null;
-
-        AuthEvent event = new AuthRequestEvent(username);
-        EventBus.getDefault().post(event);
 
         // Check for a valid password, if the user entered one.
         if (!TextUtils.isEmpty(password) && !isPasswordValid(password)) {
@@ -134,8 +115,8 @@ public class LoginActivity extends Activity {
         } else {
             // Show a progress spinner, and kick off a background task to
             // perform the user login attempt.
-            // mAuthTask = new UserLoginTask(username, password);
-            // mAuthTask.execute((Void) null);
+            AuthEvent event = new AuthRequestEvent(username, password);
+            EventBus.getDefault().post(event);
         }
     }
 
@@ -161,7 +142,11 @@ public class LoginActivity extends Activity {
 
     public void onEventBackgroundThread(AuthRequestEvent event) {
         Log.d(TAG, "Got AuthRequestEvent with username " + event.getUsername());
+        Gson gson = new GsonBuilder()
+                .registerTypeAdapter(User.class, new UserTypeAdapter())
+                .create();
         RestAdapter restAdapter = new RestAdapter.Builder()
+                .setConverter(new GsonConverter(gson))
                 .setEndpoint(SatelinxSession.API_ENDPOINT)
                 .build();
 
@@ -169,80 +154,27 @@ public class LoginActivity extends Activity {
 
         try {
             User user = session.getSalt(event.getUsername());
-            Log.d(TAG, "Got salt " + user.salt);
+            Log.d(TAG, "Got salt " + user.getSalt());
             user.buildAuthorizationHash(event.getPassword());
-            Log.d(TAG, "Auth hash: " + user.authorizationHash);
-            session.authenticate(user.username, user.authorizationHash);
+            Log.d(TAG, "Auth hash: " + user.getAuthorizationHash());
+            session.authenticate(user.getUsername(), user.getAuthorizationHash());
+            AuthSuccessEvent successEvent = new AuthSuccessEvent(user.getUsername());
+            EventBus.getDefault().post(successEvent);
         } catch (Exception e) {
             e.printStackTrace();
-            AuthEvent errorEvent = new AuthFailedEvent(event.getUsername());
+            AuthFailedEvent errorEvent = new AuthFailedEvent(event.getUsername());
             EventBus.getDefault().post(errorEvent);
         }
     }
 
-    public void onEventMainThread(AuthFailedEvent event) {
-        Log.d(TAG, "Got auth failed");
-        final CircularProgressButton mUsernameSignInButton = (CircularProgressButton) findViewById(R.id.login_button);
-        mUsernameSignInButton.setProgress(-1);
+    public void onEventMainThread(AuthSuccessEvent event) {
+        Log.d(TAG, "Got auth success");
+        mUsernameSignInButton.setProgress(100);
     }
 
-    /**
-     * Represents an asynchronous login/registration task used to authenticate
-     * the user.
-     */
-    public class UserLoginTask extends AsyncTask<Void, Void, Boolean> {
-
-        private final String mUsername;
-        private final String mPassword;
-
-        UserLoginTask(String email, String password) {
-            mUsername = email;
-            mPassword = password;
-        }
-
-        @Override
-        protected Boolean doInBackground(Void... params) {
-            // TODO: attempt authentication against a network service.
-
-            try {
-                // Simulate network access.
-                Thread.sleep(2000);
-            } catch (InterruptedException e) {
-                return false;
-            }
-
-            for (String credential : DUMMY_CREDENTIALS) {
-                String[] pieces = credential.split(":");
-                if (pieces[0].equals(mUsername)) {
-                    // Account exists, return true if the password matches.
-                    return pieces[1].equals(mPassword);
-                }
-            }
-
-            // TODO: register the new account here.
-            return true;
-        }
-
-        @Override
-        protected void onPostExecute(final Boolean success) {
-            mAuthTask = null;
-            // showProgress(false);
-
-            final CircularProgressButton mUsernameSignInButton = (CircularProgressButton) findViewById(R.id.login_button);
-            if (success) {
-                mUsernameSignInButton.setProgress(100);
-            } else {
-                mUsernameSignInButton.setProgress(-1);
-                mPasswordView.setError(getString(R.string.error_incorrect_password));
-                mPasswordView.requestFocus();
-            }
-        }
-
-        @Override
-        protected void onCancelled() {
-            mAuthTask = null;
-            // showProgress(false);
-        }
+    public void onEventMainThread(AuthFailedEvent event) {
+        Log.d(TAG, "Got auth failed");
+        mUsernameSignInButton.setProgress(-1);
     }
 }
 

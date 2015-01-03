@@ -1,6 +1,6 @@
 package com.satelinx.satelinx.helpers;
 
-import com.satelinx.satelinx.User;
+import com.satelinx.satelinx.models.User;
 
 import retrofit.http.GET;
 import retrofit.http.Header;

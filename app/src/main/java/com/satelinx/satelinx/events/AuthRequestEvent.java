@@ -7,8 +7,9 @@ public class AuthRequestEvent extends AuthEvent {
 
     String password;
 
-    public AuthRequestEvent(String username) {
+    public AuthRequestEvent(String username, String password) {
         super(username);
+        this.password = password;
     }
 
     public String getPassword() {

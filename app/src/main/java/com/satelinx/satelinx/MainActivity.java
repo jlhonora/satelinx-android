@@ -46,6 +46,8 @@ public class MainActivity extends ActionBarActivity
      */
     protected User mUser;
 
+    protected MainFragment mMainFragment;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -57,8 +59,6 @@ public class MainActivity extends ActionBarActivity
             Log.e(TAG, "Invalid user, logging out");
             performLogout();
         }
-
-        setupUser();
 
         setContentView(R.layout.activity_main);
 
@@ -90,12 +90,19 @@ public class MainActivity extends ActionBarActivity
             Log.e(TAG, "Invalid account");
             return;
         }
-        Log.d(TAG, "Setting account " + account.getName());
-        // update the main content by replacing fragments
+        EventBus.getDefault().post(new SelectAccountEvent(account, this.mUser.getAuthorizationHash()));
         FragmentManager fragmentManager = getSupportFragmentManager();
+
+        mMainFragment = MainFragment.newInstance(account);
         fragmentManager.beginTransaction()
-                .replace(R.id.container, MainFragment.newInstance(account))
+                .replace(R.id.container, mMainFragment)
                 .commit();
+    }
+
+    public void onAccountReady(Account account) {
+        if (mMainFragment != null) {
+            mMainFragment.reloadAccount(account);
+        }
     }
 
     public void onSectionAttached(Account account) {
@@ -141,8 +148,6 @@ public class MainActivity extends ActionBarActivity
         return super.onOptionsItemSelected(item);
     }
 
-
-
     protected void processExtras(Bundle extras) {
         if (extras == null) {
             return;
@@ -157,7 +162,7 @@ public class MainActivity extends ActionBarActivity
         startActivity(new Intent(this, LoginActivity.class));
     }
 
-    protected boolean setupUser() {
+    /*protected boolean setupUser() {
         Log.d(TAG, "Setup user");
         if (this.mUser == null) {
             return false;
@@ -168,7 +173,7 @@ public class MainActivity extends ActionBarActivity
         }
         EventBus.getDefault().post(new SelectAccountEvent(a, this.mUser.getAuthorizationHash()));
         return true;
-    }
+    }*/
 
     public void onEventBackgroundThread(SelectAccountEvent e) {
         Gson gson = Serialization.getGsonInstance();
@@ -196,6 +201,6 @@ public class MainActivity extends ActionBarActivity
     }
 
     public void onEventMainThread(SelectAccountReadyEvent e) {
-        onAccountSelected(e.account);
+        onAccountReady(e.account);
     }
 }

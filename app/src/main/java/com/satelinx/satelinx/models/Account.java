@@ -34,4 +34,8 @@ public class Account {
     public String toString() {
         return this.getName();
     }
+
+    public List<Trackable> getTrackables() {
+        return this.trackables;
+    }
 }

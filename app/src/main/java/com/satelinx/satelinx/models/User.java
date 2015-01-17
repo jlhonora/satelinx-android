@@ -1,9 +1,18 @@
 package com.satelinx.satelinx.models;
 
+import android.accounts.Account;
+
+import com.google.gson.FieldNamingPolicy;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
+import com.satelinx.satelinx.models.typeAdapters.UserTypeAdapter;
+
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.List;
 
 /**
  * Created by jlh on 1/2/15.
@@ -14,6 +23,8 @@ public class User {
     String username;
     String salt;
     transient String authorizationHash;
+
+    List<Account> accounts;
 
     public String getUsername() {
         return username;
@@ -60,6 +71,18 @@ public class User {
 
     static String bin2hex(byte[] data) {
         return String.format("%0" + (data.length*2) + "X", new BigInteger(1, data)).toLowerCase();
+    }
+
+    public JsonObject toJson() {
+
+        return User.getJsonInstance().toJsonTree(this).getAsJsonObject();
+    }
+
+    public static Gson getJsonInstance() {
+        return new GsonBuilder()
+                .registerTypeAdapter(User.class, new UserTypeAdapter())
+                .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
+                .create();
     }
 
 }

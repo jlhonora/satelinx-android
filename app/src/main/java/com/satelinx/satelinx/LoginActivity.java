@@ -15,15 +15,14 @@ import android.widget.Toast;
 
 import com.dd.CircularProgressButton;
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.satelinx.satelinx.events.AuthEvent;
 import com.satelinx.satelinx.events.AuthFailedEvent;
 import com.satelinx.satelinx.events.AuthRequestEvent;
 import com.satelinx.satelinx.events.AuthSuccessEvent;
 import com.satelinx.satelinx.helpers.SatelinxSession;
+import com.satelinx.satelinx.helpers.Serialization;
 import com.satelinx.satelinx.models.User;
-import com.satelinx.satelinx.models.typeAdapters.UserTypeAdapter;
 
 import de.greenrobot.event.EventBus;
 import de.greenrobot.event.SubscriberExceptionEvent;
@@ -51,8 +50,10 @@ public class LoginActivity extends Activity {
 
         // Set up the login form.
         mUsernameView = (EditText) findViewById(R.id.username);
+        mUsernameView.setText("demo");
 
         mPasswordView = (EditText) findViewById(R.id.password);
+        mPasswordView.setText("satelinx2011");
         mPasswordView.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView textView, int id, KeyEvent keyEvent) {
@@ -150,9 +151,7 @@ public class LoginActivity extends Activity {
     }
 
     public void onEventBackgroundThread(AuthRequestEvent event) {
-        Gson gson = new GsonBuilder()
-                .registerTypeAdapter(User.class, new UserTypeAdapter())
-                .create();
+        Gson gson = Serialization.getGsonInstance();
         RestAdapter restAdapter = new RestAdapter.Builder()
                 .setConverter(new GsonConverter(gson))
                 .setEndpoint(SatelinxSession.API_ENDPOINT)
@@ -165,16 +164,20 @@ public class LoginActivity extends Activity {
              * To authenticate we need three steps:
              *
              * 1. Get the user's salt (no ssl for now, can't
-             *    transmit the password in plain text.
+             *    transmit the password in plain text).
              * 2. Build the password hash with the obtained salt.
              * 3. Authenticate with the new hash.
              */
             User user = session.getSalt(event.getUsername());
             user.buildAuthorizationHash(event.getPassword());
-            session.authenticate(user.getUsername(), user.getAuthorizationHash());
+            User authUser = session.authenticate(user.getUsername(), user.getAuthorizationHash());
 
-            // Post a success event
-            AuthSuccessEvent successEvent = new AuthSuccessEvent(user.getUsername(), user.toJson());
+            // Reapply the auth hash from the previous user
+            authUser.setAuthorizationHash(user.getAuthorizationHash());
+
+            Log.d(TAG, "User's auth hash: " + authUser.getAuthorizationHash());
+
+            AuthSuccessEvent successEvent = new AuthSuccessEvent(user.getUsername(), authUser.toJson());
             EventBus.getDefault().post(successEvent);
         } catch (Exception e) {
             e.printStackTrace();
@@ -200,6 +203,8 @@ public class LoginActivity extends Activity {
     }
 
     protected void startActivityWithUser(JsonObject userJson) {
+        Log.d(TAG, "Printing user Json");
+        Log.d(TAG, Serialization.getPrettyPrintedString(userJson));
         if (userJson == null) {
             Toast.makeText(this, R.string.error_no_user, Toast.LENGTH_LONG).show();
             return;

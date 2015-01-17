@@ -1,12 +1,7 @@
 package com.satelinx.satelinx.models;
 
-import android.accounts.Account;
-
-import com.google.gson.FieldNamingPolicy;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
-import com.satelinx.satelinx.models.typeAdapters.UserTypeAdapter;
+import com.satelinx.satelinx.helpers.Serialization;
 
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
@@ -20,9 +15,14 @@ import java.util.List;
 public class User {
 
     long id;
+
     String username;
+
+    String name;
+
     String salt;
-    transient String authorizationHash;
+
+    String authorization_hash;
 
     List<Account> accounts;
 
@@ -43,11 +43,11 @@ public class User {
     }
 
     public String getAuthorizationHash() {
-        return authorizationHash;
+        return authorization_hash;
     }
 
     public void setAuthorizationHash(String authorizationHash) {
-        this.authorizationHash = authorizationHash;
+        this.authorization_hash = authorizationHash;
     }
 
     public void buildAuthorizationHash(String password) {
@@ -63,7 +63,7 @@ public class User {
         try {
             digester.update(input.getBytes("UTF-8"));
             byte[] digest = digester.digest();
-            this.authorizationHash = bin2hex(digest);
+            this.authorization_hash = bin2hex(digest);
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
@@ -75,14 +75,22 @@ public class User {
 
     public JsonObject toJson() {
 
-        return User.getJsonInstance().toJsonTree(this).getAsJsonObject();
+        return Serialization.getGsonInstance().toJsonTree(this).getAsJsonObject();
     }
 
-    public static Gson getJsonInstance() {
-        return new GsonBuilder()
-                .registerTypeAdapter(User.class, new UserTypeAdapter())
-                .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
-                .create();
+
+    public List<Account> getAccounts() {
+        return this.accounts;
+    }
+
+    public Account getAccount(int index) {
+        if (this.accounts == null || this.accounts.isEmpty()) {
+            return null;
+        }
+        if (index < 0 || index >= this.accounts.size()) {
+            return null;
+        }
+        return this.accounts.get(index);
     }
 
 }

@@ -16,7 +16,18 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
+import com.google.gson.Gson;
+import com.satelinx.satelinx.events.SelectAccountEvent;
+import com.satelinx.satelinx.events.SelectAccountFailedEvent;
+import com.satelinx.satelinx.events.SelectAccountReadyEvent;
+import com.satelinx.satelinx.helpers.SatelinxSession;
+import com.satelinx.satelinx.helpers.Serialization;
+import com.satelinx.satelinx.models.Account;
 import com.satelinx.satelinx.models.User;
+
+import de.greenrobot.event.EventBus;
+import retrofit.RestAdapter;
+import retrofit.converter.GsonConverter;
 
 
 public class MainActivity extends ActionBarActivity
@@ -43,6 +54,7 @@ public class MainActivity extends ActionBarActivity
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        EventBus.getDefault().register(this);
 
         processExtras(this.getIntent().getExtras());
 
@@ -51,7 +63,7 @@ public class MainActivity extends ActionBarActivity
             performLogout();
         }
 
-        Toast.makeText(this, "User: " + mUser.getUsername(), Toast.LENGTH_LONG).show();
+        setupUser();
 
         setContentView(R.layout.activity_main);
 
@@ -62,30 +74,40 @@ public class MainActivity extends ActionBarActivity
         // Set up the drawer.
         mNavigationDrawerFragment.setUp(
                 R.id.navigation_drawer,
-                (DrawerLayout) findViewById(R.id.drawer_layout));
+                (DrawerLayout) findViewById(R.id.drawer_layout),
+                this.mUser);
+    }
+
+    @Override
+    public void onDestroy() {
+        EventBus.getDefault().unregister(this);
+        super.onDestroy();
     }
 
     @Override
     public void onNavigationDrawerItemSelected(int position) {
+        Account account = this.mUser.getAccount(position);
+        onAccountSelected(account);
+    }
+
+    public void onAccountSelected(Account account) {
+        if (account == null) {
+            Log.e(TAG, "Invalid account");
+            return;
+        }
+        Log.d(TAG, "Setting account " + account.getName());
         // update the main content by replacing fragments
         FragmentManager fragmentManager = getSupportFragmentManager();
         fragmentManager.beginTransaction()
-                .replace(R.id.container, PlaceholderFragment.newInstance(position + 1))
+                .replace(R.id.container, PlaceholderFragment.newInstance(account))
                 .commit();
     }
 
-    public void onSectionAttached(int number) {
-        switch (number) {
-            case 1:
-                mTitle = getString(R.string.title_section1);
-                break;
-            case 2:
-                mTitle = getString(R.string.title_section2);
-                break;
-            case 3:
-                mTitle = getString(R.string.title_section3);
-                break;
+    public void onSectionAttached(Account account) {
+        if (account == null) {
+            return;
         }
+        mTitle = account.getName();
     }
 
     public void restoreActionBar() {
@@ -132,16 +154,18 @@ public class MainActivity extends ActionBarActivity
          * The fragment argument representing the section number for this
          * fragment.
          */
-        private static final String ARG_SECTION_NUMBER = "section_number";
+        private static final String ARG_ACCOUNT_JSON = "section_number";
+
+        private Account mAccount;
 
         /**
          * Returns a new instance of this fragment for the given section
          * number.
          */
-        public static PlaceholderFragment newInstance(int sectionNumber) {
+        public static PlaceholderFragment newInstance(Account account) {
             PlaceholderFragment fragment = new PlaceholderFragment();
             Bundle args = new Bundle();
-            args.putInt(ARG_SECTION_NUMBER, sectionNumber);
+            args.putString(ARG_ACCOUNT_JSON, Serialization.getGsonInstance().toJson(account));
             fragment.setArguments(args);
             return fragment;
         }
@@ -159,8 +183,11 @@ public class MainActivity extends ActionBarActivity
         @Override
         public void onAttach(Activity activity) {
             super.onAttach(activity);
-            ((MainActivity) activity).onSectionAttached(
-                    getArguments().getInt(ARG_SECTION_NUMBER));
+
+            Account account = Serialization.getGsonInstance()
+                    .fromJson(getArguments()
+                    .getString(ARG_ACCOUNT_JSON), Account.class);
+            ((MainActivity) activity).onSectionAttached(account);
         }
     }
 
@@ -171,11 +198,52 @@ public class MainActivity extends ActionBarActivity
         if (!extras.containsKey(KEY_USER_JSON)) {
             return;
         }
-        this.mUser = User.getJsonInstance().fromJson(extras.getString(KEY_USER_JSON), User.class);
+        this.mUser = Serialization.getGsonInstance().fromJson(extras.getString(KEY_USER_JSON), User.class);
     }
 
     protected void performLogout() {
         startActivity(new Intent(this, LoginActivity.class));
     }
 
+    protected boolean setupUser() {
+        Log.d(TAG, "Setup user");
+        if (this.mUser == null) {
+            return false;
+        }
+        Account a = this.mUser.getAccount(0);
+        if (a == null) {
+            return false;
+        }
+        EventBus.getDefault().post(new SelectAccountEvent(a, this.mUser.getAuthorizationHash()));
+        return true;
+    }
+
+    public void onEventBackgroundThread(SelectAccountEvent e) {
+        Gson gson = Serialization.getGsonInstance();
+        RestAdapter restAdapter = new RestAdapter.Builder()
+                .setConverter(new GsonConverter(gson))
+                .setEndpoint(SatelinxSession.API_ENDPOINT)
+                .build();
+
+        SatelinxSession session = restAdapter.create(SatelinxSession.class);
+        try {
+            Account account = session.populate(e.account.getId(), e.authorizationHash);
+            Log.d(TAG, "Printing account");
+            Log.d(TAG, Serialization.getPrettyPrintedString(account));
+
+            EventBus.getDefault().post(new SelectAccountReadyEvent(account));
+        } catch (Exception exc) {
+            exc.printStackTrace();
+
+            EventBus.getDefault().post(new SelectAccountFailedEvent(e.account, exc));
+        }
+    }
+
+    public void onEventMainThread(SelectAccountFailedEvent e) {
+        Toast.makeText(this, "Error selecting account " + e.account.getName(), Toast.LENGTH_LONG).show();
+    }
+
+    public void onEventMainThread(SelectAccountReadyEvent e) {
+        onAccountSelected(e.account);
+    }
 }

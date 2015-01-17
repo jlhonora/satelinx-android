@@ -1,6 +1,7 @@
 package com.satelinx.satelinx;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
@@ -10,10 +11,12 @@ import android.view.View.OnClickListener;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.dd.CircularProgressButton;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
 import com.satelinx.satelinx.events.AuthEvent;
 import com.satelinx.satelinx.events.AuthFailedEvent;
 import com.satelinx.satelinx.events.AuthRequestEvent;
@@ -170,11 +173,8 @@ public class LoginActivity extends Activity {
             user.buildAuthorizationHash(event.getPassword());
             session.authenticate(user.getUsername(), user.getAuthorizationHash());
 
-            // Everything went well, save the object
-            user.performSave();
-
             // Post a success event
-            AuthSuccessEvent successEvent = new AuthSuccessEvent(user.getUsername());
+            AuthSuccessEvent successEvent = new AuthSuccessEvent(user.getUsername(), user.toJson());
             EventBus.getDefault().post(successEvent);
         } catch (Exception e) {
             e.printStackTrace();
@@ -187,6 +187,7 @@ public class LoginActivity extends Activity {
 
     public void onEventMainThread(AuthSuccessEvent event) {
         mUsernameSignInButton.setProgress(100);
+        startActivityWithUser(event.userJson);
     }
 
     public void onEventMainThread(AuthFailedEvent event) {
@@ -196,5 +197,15 @@ public class LoginActivity extends Activity {
     public void onEventMainThread(SubscriberExceptionEvent e) {
         Log.d(TAG, "Exception event");
         mUsernameSignInButton.setProgress(-1);
+    }
+
+    protected void startActivityWithUser(JsonObject userJson) {
+        if (userJson == null) {
+            Toast.makeText(this, R.string.error_no_user, Toast.LENGTH_LONG).show();
+            return;
+        }
+        Intent i = new Intent(this, MainActivity.class);
+        i.putExtra(MainActivity.KEY_USER_JSON, userJson.toString());
+        startActivity(i);
     }
 }

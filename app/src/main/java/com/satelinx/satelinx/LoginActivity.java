@@ -23,12 +23,13 @@ import com.satelinx.satelinx.models.User;
 import com.satelinx.satelinx.models.typeAdapters.UserTypeAdapter;
 
 import de.greenrobot.event.EventBus;
+import de.greenrobot.event.SubscriberExceptionEvent;
 import retrofit.RestAdapter;
 import retrofit.converter.GsonConverter;
 
 
 /**
- * A login screen that offers login via email/password.
+ * A login screen that offers login via username/password.
  */
 public class LoginActivity extends Activity {
 
@@ -42,6 +43,7 @@ public class LoginActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        EventBus.getDefault().register(this);
         setContentView(R.layout.activity_login);
 
         // Set up the login form.
@@ -72,7 +74,7 @@ public class LoginActivity extends Activity {
 
     /**
      * Attempts to sign in or register the account specified by the login form.
-     * If there are form errors (invalid email, missing fields, etc.), the
+     * If there are form errors (invalid username, missing fields, etc.), the
      * errors are presented and no actual login attempt is made.
      */
     public void attemptLogin() {
@@ -97,7 +99,7 @@ public class LoginActivity extends Activity {
             cancel = true;
         }
 
-        // Check for a valid email address.
+        // Check for a valid username.
         if (TextUtils.isEmpty(username)) {
             mUsernameView.setError(getString(R.string.error_field_required));
             focusView = mUsernameView;
@@ -120,8 +122,8 @@ public class LoginActivity extends Activity {
         }
     }
 
-    private boolean isUsernameValid(String email) {
-        return email.length() >= 4;
+    private boolean isUsernameValid(String username) {
+        return username.length() >= 4;
     }
 
     private boolean isPasswordValid(String password) {
@@ -131,17 +133,20 @@ public class LoginActivity extends Activity {
     @Override
     public void onStart() {
         super.onStart();
-        EventBus.getDefault().register(this);
     }
 
     @Override
     public void onStop() {
-        EventBus.getDefault().unregister(this);
         super.onStop();
     }
 
+    @Override
+    public void onDestroy() {
+        EventBus.getDefault().unregister(this);
+        super.onDestroy();
+    }
+
     public void onEventBackgroundThread(AuthRequestEvent event) {
-        Log.d(TAG, "Got AuthRequestEvent with username " + event.getUsername());
         Gson gson = new GsonBuilder()
                 .registerTypeAdapter(User.class, new UserTypeAdapter())
                 .create();
@@ -153,30 +158,43 @@ public class LoginActivity extends Activity {
         SatelinxSession session = restAdapter.create(SatelinxSession.class);
 
         try {
+            /*
+             * To authenticate we need three steps:
+             *
+             * 1. Get the user's salt (no ssl for now, can't
+             *    transmit the password in plain text.
+             * 2. Build the password hash with the obtained salt.
+             * 3. Authenticate with the new hash.
+             */
             User user = session.getSalt(event.getUsername());
-            Log.d(TAG, "Got salt " + user.getSalt());
             user.buildAuthorizationHash(event.getPassword());
-            Log.d(TAG, "Auth hash: " + user.getAuthorizationHash());
             session.authenticate(user.getUsername(), user.getAuthorizationHash());
+
+            // Everything went well, save the object
+            user.performSave();
+
+            // Post a success event
             AuthSuccessEvent successEvent = new AuthSuccessEvent(user.getUsername());
             EventBus.getDefault().post(successEvent);
         } catch (Exception e) {
             e.printStackTrace();
+
+            // Something went wrong, let the user know
             AuthFailedEvent errorEvent = new AuthFailedEvent(event.getUsername());
             EventBus.getDefault().post(errorEvent);
         }
     }
 
     public void onEventMainThread(AuthSuccessEvent event) {
-        Log.d(TAG, "Got auth success");
         mUsernameSignInButton.setProgress(100);
     }
 
     public void onEventMainThread(AuthFailedEvent event) {
-        Log.d(TAG, "Got auth failed");
+        mUsernameSignInButton.setProgress(-1);
+    }
+
+    public void onEventMainThread(SubscriberExceptionEvent e) {
+        Log.d(TAG, "Exception event");
         mUsernameSignInButton.setProgress(-1);
     }
 }
-
-
-

@@ -4,9 +4,12 @@ import android.app.Activity;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.text.TextPaint;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -168,22 +171,49 @@ public class MainFragment extends Fragment {
         return lastCoordinate;
     }
 
-    public BitmapDescriptor getCustomMarker(Trackable t) {
-        Iconify.IconValue iconValue = Iconify.IconValue.fa_car;
+    public BitmapDescriptor getCustomMarker(final Trackable t) {
+        Iconify.IconValue iconValue_t = Iconify.IconValue.fa_car;
         switch (t.type) {
             case "AirVehicle":
-                iconValue = Iconify.IconValue.fa_plane;
+                iconValue_t = Iconify.IconValue.fa_plane;
+
+                // No helicopter icon for now
+                if (t.sub_type != null && t.sub_type.contains("Heli")) {
+                    iconValue_t = Iconify.IconValue.fa_map_marker;
+                }
                 break;
             default:
-                iconValue = Iconify.IconValue.fa_car;
+                iconValue_t = Iconify.IconValue.fa_car;
         }
-        IconDrawable id = new IconDrawable(this.getActivity(), iconValue)
-                .color(Color.parseColor(t.path_color))
-                .actionBarSize();
+
+        final Iconify.IconValue iconValue = iconValue_t;
+
+        IconDrawable id = new IconDrawable(this.getActivity(), iconValue) {
+
+            @Override
+            public void draw(Canvas canvas) {
+                TextPaint paint = new TextPaint();
+                paint.setTypeface(Iconify.getTypeface(getActivity()));
+                paint.setStyle(Paint.Style.FILL_AND_STROKE);
+                paint.setTextAlign(Paint.Align.CENTER);
+                paint.setUnderlineText(false);
+                paint.setColor(Color.parseColor(t.path_color));
+                paint.setAntiAlias(true);
+                paint.setTextSize(getBounds().height());
+                Rect textBounds = new Rect();
+                String textValue = String.valueOf(iconValue.character());
+                paint.getTextBounds(textValue, 0, 1, textBounds);
+                float textBottom = (getBounds().height() - textBounds.height()) / 2f + textBounds.height() - textBounds.bottom;
+                canvas.drawText(textValue, getBounds().width() / 2f, textBottom, paint);
+            }
+
+        }.actionBarSize();
         Drawable d = id.getCurrent();
         Bitmap bm = Bitmap.createBitmap(id.getIntrinsicWidth(), id.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
         Canvas c = new Canvas(bm);
+
         d.draw(c);
+
         return BitmapDescriptorFactory.fromBitmap(bm);
     }
 

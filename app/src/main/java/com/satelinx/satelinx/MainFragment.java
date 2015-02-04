@@ -1,6 +1,10 @@
 package com.satelinx.satelinx;
 
 import android.app.Activity;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.util.Log;
@@ -12,10 +16,14 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptor;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.joanzapata.android.iconify.IconDrawable;
+import com.joanzapata.android.iconify.Iconify;
 import com.satelinx.satelinx.helpers.Serialization;
 import com.satelinx.satelinx.models.Account;
 import com.satelinx.satelinx.models.Coordinate;
@@ -152,11 +160,31 @@ public class MainFragment extends Fragment {
                 .position(new LatLng(lastCoordinate.latitude, lastCoordinate.longitude))
                 .title(t.identifier)
                 .snippet(t.driver_name)
+                .icon(getCustomMarker(t))
                 .draggable(false);
 
         mMap.addMarker(marker);
 
         return lastCoordinate;
+    }
+
+    public BitmapDescriptor getCustomMarker(Trackable t) {
+        Iconify.IconValue iconValue = Iconify.IconValue.fa_car;
+        switch (t.type) {
+            case "AirVehicle":
+                iconValue = Iconify.IconValue.fa_plane;
+                break;
+            default:
+                iconValue = Iconify.IconValue.fa_car;
+        }
+        IconDrawable id = new IconDrawable(this.getActivity(), iconValue)
+                .color(Color.parseColor(t.path_color))
+                .actionBarSize();
+        Drawable d = id.getCurrent();
+        Bitmap bm = Bitmap.createBitmap(id.getIntrinsicWidth(), id.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
+        Canvas c = new Canvas(bm);
+        d.draw(c);
+        return BitmapDescriptorFactory.fromBitmap(bm);
     }
 
     public void reloadAccount(Account account) {

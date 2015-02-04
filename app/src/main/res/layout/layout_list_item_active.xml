@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="match_parent"
+    android:orientation="horizontal">
+
+    <View
+        android:id="@+id/indicator"
+        android:visibility="invisible"
+        android:layout_width="8dp"
+        android:layout_height="match_parent"
+        android:background="@color/theme_primary" />
+
+    <TextView
+        android:id="@+id/text"
+        android:textColor="@color/body_text_1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/test_name"
+        android:padding="8dip"/>
+
+</LinearLayout>

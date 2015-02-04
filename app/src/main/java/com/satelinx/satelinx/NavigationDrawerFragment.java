@@ -5,12 +5,12 @@ import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
-import android.support.v4.app.ActionBarDrawerToggle;
 import android.support.v4.app.Fragment;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarActivity;
+import android.support.v7.app.ActionBarDrawerToggle;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -21,6 +21,7 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.satelinx.satelinx.helpers.Serialization;
@@ -87,9 +88,6 @@ public class NavigationDrawerFragment extends Fragment {
             mCurrentSelectedPosition = savedInstanceState.getInt(STATE_SELECTED_POSITION);
             mFromSavedInstanceState = true;
         }
-
-        // Select either the default item (0) or the last selected item.
-        selectItem(mCurrentSelectedPosition);
     }
 
     @Override
@@ -102,16 +100,20 @@ public class NavigationDrawerFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        mDrawerListView = (ListView) inflater.inflate(
+        View drawerView = inflater.inflate(
                 R.layout.fragment_navigation_drawer, container, false);
+        mDrawerListView = (ListView) drawerView.findViewById(R.id.drawer_list);
         mDrawerListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                selectItem(position);
+                selectItem(parent, position);
             }
         });
 
-        return mDrawerListView;
+        // Select either the default item (0) or the last selected item.
+        selectItem(mDrawerListView, mCurrentSelectedPosition);
+
+        return drawerView;
     }
 
     public boolean isDrawerOpen() {
@@ -131,18 +133,12 @@ public class NavigationDrawerFragment extends Fragment {
 
         // set a custom shadow that overlays the main content when the drawer opens
         mDrawerLayout.setDrawerShadow(R.drawable.drawer_shadow, GravityCompat.START);
-        // set up the drawer's list view with items and click listener
-
-        ActionBar actionBar = getActionBar();
-        actionBar.setDisplayHomeAsUpEnabled(true);
-        actionBar.setHomeButtonEnabled(true);
 
         // ActionBarDrawerToggle ties together the the proper interactions
         // between the navigation drawer and the action bar app icon.
         mDrawerToggle = new ActionBarDrawerToggle(
                 getActivity(),                    /* host Activity */
                 mDrawerLayout,                    /* DrawerLayout object */
-                R.drawable.ic_drawer,             /* nav drawer image to replace 'Up' caret */
                 R.string.navigation_drawer_open,  /* "open drawer" description for accessibility */
                 R.string.navigation_drawer_close  /* "close drawer" description for accessibility */
         ) {
@@ -194,13 +190,33 @@ public class NavigationDrawerFragment extends Fragment {
 
         mDrawerListView.setAdapter(new ArrayAdapter<Account>(
                 getActionBar().getThemedContext(),
-                android.R.layout.simple_list_item_activated_1,
-                android.R.id.text1,
+                R.layout.layout_list_item_active,
+                R.id.text,
                 this.mUser.getAccounts()));
         mDrawerListView.setItemChecked(mCurrentSelectedPosition, true);
+
+        setupUserView(this.getView());
     }
 
-    private void selectItem(int position) {
+    protected void setupUserView(View root) {
+        if (this.mUser == null || root == null) {
+            return;
+        }
+        TextView tv1 = (TextView) root.findViewById(R.id.drawer_text1);
+        TextView tv2 = (TextView) root.findViewById(R.id.drawer_text2);
+
+        tv1.setText(this.mUser.getName());
+        tv2.setText(this.mUser.getUsername());
+    }
+
+    private void selectItem(AdapterView<?> parent, int position) {
+        if (parent != null) {
+            for (int i = parent.getFirstVisiblePosition(); i < parent.getLastVisiblePosition(); i++) {
+                View v = parent.getChildAt(i);
+                setListItemStatus(v, false);
+            }
+        }
+
         Log.d(TAG, "Selected item at position " + position);
         mCurrentSelectedPosition = position;
         if (mDrawerListView != null) {
@@ -212,6 +228,19 @@ public class NavigationDrawerFragment extends Fragment {
         if (mCallbacks != null) {
             mCallbacks.onNavigationDrawerItemSelected(position);
         }
+
+        if (parent != null) {
+            View v = parent.getChildAt(position);
+            setListItemStatus(v, true);
+        }
+    }
+
+    protected void setListItemStatus(View v, boolean active) {
+        if (v == null) {
+            return;
+        }
+        View indicator = v.findViewById(R.id.indicator);
+        indicator.setVisibility(active ? View.VISIBLE : View.INVISIBLE);
     }
 
     @Override
@@ -248,7 +277,7 @@ public class NavigationDrawerFragment extends Fragment {
         // If the drawer is open, show the global app actions in the action bar. See also
         // showGlobalContextActionBar, which controls the top-left area of the action bar.
         if (mDrawerLayout != null && isDrawerOpen()) {
-            inflater.inflate(R.menu.global, menu);
+            // inflater.inflate(R.menu.global, menu);
             showGlobalContextActionBar();
         }
         super.onCreateOptionsMenu(menu, inflater);
@@ -275,7 +304,6 @@ public class NavigationDrawerFragment extends Fragment {
     private void showGlobalContextActionBar() {
         ActionBar actionBar = getActionBar();
         actionBar.setDisplayShowTitleEnabled(true);
-        actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_STANDARD);
         actionBar.setTitle(R.string.app_name);
     }
 

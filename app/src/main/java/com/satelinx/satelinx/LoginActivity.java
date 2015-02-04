@@ -1,8 +1,8 @@
 package com.satelinx.satelinx;
 
-import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.v7.app.ActionBarActivity;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -33,7 +33,7 @@ import retrofit.converter.GsonConverter;
 /**
  * A login screen that offers login via username/password.
  */
-public class LoginActivity extends Activity {
+public class LoginActivity extends ActionBarActivity {
 
     public static final String TAG = LoginActivity.class.getSimpleName();
 

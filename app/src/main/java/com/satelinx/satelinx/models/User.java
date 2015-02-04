@@ -30,6 +30,10 @@ public class User {
         return username;
     }
 
+    public String getName() {
+        return name;
+    }
+
     public void setUsername(String username) {
         this.username = username;
     }

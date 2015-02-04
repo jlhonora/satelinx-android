@@ -1,4 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="white">#ffffff</color>
+    <color name="primary_green">#009688</color>
+    <color name="secondary_green">#00796b</color>
+    <color name="primary_blue">#3f51b5</color>
+    <color name="primary_dark_blue">#303f9f</color>
+    <color name="primary_light_blue">#7986cb</color>
+    <color name="theme_primary">@color/primary_green</color>
+    <color name="theme_primary_dark">@color/secondary_green</color>
+    <color name="theme_primary_light">@color/primary_green</color>
+    <color name="theme_accent_2">#e91e63</color>
+    <color name="body_text_1">#de000000</color>
 </resources>

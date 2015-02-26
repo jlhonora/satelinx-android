@@ -12,4 +12,6 @@
     <string name="error_field_required">This field is required</string>
 
     <string name="error_no_user">Invalid user</string>
+    <string name="username">Username</string>
+    <string name="password">Password</string>
 </resources>

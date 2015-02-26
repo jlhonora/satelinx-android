@@ -11,18 +11,23 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
 
-import com.google.gson.Gson;
 import com.satelinx.satelinx.events.SelectAccountEvent;
 import com.satelinx.satelinx.events.SelectAccountFailedEvent;
 import com.satelinx.satelinx.events.SelectAccountReadyEvent;
-import com.satelinx.satelinx.helpers.SatelinxSession;
+import com.satelinx.satelinx.events.SelectTrackableEvent;
+import com.satelinx.satelinx.events.SelectTrackableFailedEvent;
+import com.satelinx.satelinx.events.SelectTrackableReadyEvent;
+import com.satelinx.satelinx.helpers.ApiManager;
+import com.satelinx.satelinx.helpers.EnvironmentManager;
 import com.satelinx.satelinx.helpers.Serialization;
 import com.satelinx.satelinx.models.Account;
+import com.satelinx.satelinx.models.Coordinate;
+import com.satelinx.satelinx.models.Trackable;
 import com.satelinx.satelinx.models.User;
 
+import java.util.List;
+
 import de.greenrobot.event.EventBus;
-import retrofit.RestAdapter;
-import retrofit.converter.GsonConverter;
 
 
 public class MainActivity extends ActionBarActivity
@@ -45,6 +50,7 @@ public class MainActivity extends ActionBarActivity
      * The user of this activity
      */
     protected User mUser;
+    protected Account mSelectedAccount;
 
     protected MainFragment mMainFragment;
 
@@ -83,9 +89,29 @@ public class MainActivity extends ActionBarActivity
     }
 
     @Override
-    public void onNavigationDrawerItemSelected(int position) {
+    public void onAccountSelected(int position) {
         Account account = this.mUser.getAccount(position);
         onAccountSelected(account);
+    }
+
+    @Override
+    public void onItemSelected(int position) {
+        Log.d(TAG, "Selected item on position " + position);
+        if (this.mSelectedAccount == null) {
+            return;
+        }
+        List<Trackable> trackables = this.mSelectedAccount.getTrackables();
+        if (trackables == null || trackables.isEmpty() || position < 0 || position >= trackables.size()) {
+            return;
+        }
+        Trackable trackable = trackables.get(position);
+        if (trackable == null) {
+            return;
+        }
+        Log.d(TAG, "Sending event");
+        //SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        //EventBus.getDefault().post(new SelectTrackableEvent(trackable, sdf.format(new Date())));
+        EventBus.getDefault().post(new SelectTrackableEvent(trackable, "last"));
     }
 
     public void onAccountSelected(Account account) {
@@ -103,8 +129,21 @@ public class MainActivity extends ActionBarActivity
     }
 
     public void onAccountReady(Account account) {
+        this.mSelectedAccount = account;
+        if (mNavigationDrawerFragment != null) {
+            mNavigationDrawerFragment.reloadAccount(account);
+        }
         if (mMainFragment != null) {
             mMainFragment.reloadAccount(account);
+        }
+    }
+
+    public void onTrackableReady(Trackable trackable, List<Coordinate> coordinates) {
+        if (mNavigationDrawerFragment != null) {
+            mNavigationDrawerFragment.onTrackableReady(trackable);
+        }
+        if (mMainFragment != null) {
+            mMainFragment.loadTrackable(trackable, coordinates);
         }
     }
 
@@ -175,17 +214,12 @@ public class MainActivity extends ActionBarActivity
     }*/
 
     public void onEventBackgroundThread(SelectAccountEvent e) {
-        Gson gson = Serialization.getGsonInstance();
-        RestAdapter restAdapter = new RestAdapter.Builder()
-                .setConverter(new GsonConverter(gson))
-                .setEndpoint(SatelinxSession.API_ENDPOINT)
-                .build();
-
-        SatelinxSession session = restAdapter.create(SatelinxSession.class);
         try {
-            Account account = session.populate(e.account.getId(), e.authorizationHash);
-            Log.d(TAG, "Printing account");
-            Log.d(TAG, Serialization.getPrettyPrintedString(account));
+            Account account = ApiManager.getSession().populate(e.account.getId(), e.authorizationHash);
+            if (EnvironmentManager.isDevelopment()) {
+                Log.d(TAG, "Printing account");
+                Log.d(TAG, Serialization.getPrettyPrintedString(account));
+            }
 
             EventBus.getDefault().post(new SelectAccountReadyEvent(account));
         } catch (Exception exc) {
@@ -201,5 +235,45 @@ public class MainActivity extends ActionBarActivity
 
     public void onEventMainThread(SelectAccountReadyEvent e) {
         onAccountReady(e.account);
+    }
+
+    public void onEventBackgroundThread(SelectTrackableEvent e) {
+        try {
+            List<Coordinate> coordinates = ApiManager.getSession().showDate(e.trackable.id, e.date, this.mUser.getAuthorizationHash());
+            if (EnvironmentManager.isDevelopment()) {
+                Log.d(TAG, "Printing account");
+                Log.d(TAG, Serialization.getPrettyPrintedString(coordinates));
+            }
+
+            if (coordinates == null || coordinates.isEmpty()) {
+                EventBus.getDefault().post(new SelectTrackableFailedEvent(e.trackable, SelectTrackableFailedEvent.STATUS_EMPTY_LIST));
+                return;
+            }
+            EventBus.getDefault().post(new SelectTrackableReadyEvent(e.trackable, coordinates));
+        } catch (Exception exc) {
+            exc.printStackTrace();
+
+            EventBus.getDefault().post(new SelectTrackableFailedEvent(e.trackable, SelectTrackableFailedEvent.STATUS_UNAUTHORIZED));
+        }
+    }
+
+    public void onEventMainThread(SelectTrackableReadyEvent e) {
+        onTrackableReady(e.trackable, e.coordinates);
+    }
+
+    public void onEventMainThread(SelectTrackableFailedEvent e) {
+        Log.d(TAG, "Trackable failed with status: " + e.status);
+        int resId = -1;
+        switch (e.status) {
+            case SelectTrackableFailedEvent.STATUS_EMPTY_LIST:
+                resId = R.string.select_failed_no_coordinates;
+                break;
+            case SelectTrackableFailedEvent.STATUS_UNAUTHORIZED:
+                resId = R.string.select_failed_bad_request;
+                break;
+        }
+        if (resId != -1) {
+            Toast.makeText(this, resId, Toast.LENGTH_SHORT).show();
+        }
     }
 }

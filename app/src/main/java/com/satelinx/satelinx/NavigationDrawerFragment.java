@@ -21,12 +21,16 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.satelinx.satelinx.helpers.Serialization;
 import com.satelinx.satelinx.models.Account;
+import com.satelinx.satelinx.models.Trackable;
 import com.satelinx.satelinx.models.User;
+
+import java.util.List;
 
 /**
  * Fragment used for managing interactions for and presentation of a navigation drawer.
@@ -61,6 +65,7 @@ public class NavigationDrawerFragment extends Fragment {
     private ActionBarDrawerToggle mDrawerToggle;
 
     private DrawerLayout mDrawerLayout;
+    private Spinner mDrawerSpinner;
     private ListView mDrawerListView;
     private View mFragmentContainerView;
 
@@ -110,8 +115,7 @@ public class NavigationDrawerFragment extends Fragment {
             }
         });
 
-        // Select either the default item (0) or the last selected item.
-        selectItem(mDrawerListView, mCurrentSelectedPosition);
+        mDrawerSpinner = (Spinner) drawerView.findViewById(R.id.drawer_spinner);
 
         return drawerView;
     }
@@ -188,12 +192,26 @@ public class NavigationDrawerFragment extends Fragment {
 
         mDrawerLayout.setDrawerListener(mDrawerToggle);
 
-        mDrawerListView.setAdapter(new ArrayAdapter<Account>(
+        mDrawerSpinner.setAdapter(new ArrayAdapter<Account>(
                 getActionBar().getThemedContext(),
                 R.layout.layout_list_item_active,
                 R.id.text,
                 this.mUser.getAccounts()));
-        mDrawerListView.setItemChecked(mCurrentSelectedPosition, true);
+
+        mDrawerSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View v, int position, long id) {
+                selectAccountItem(position);
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parentView) {
+
+            }
+        });
+        // mDrawerSpinner.setItemChecked(mCurrentSelectedPosition, true);
+        selectAccountItem(0);
 
         setupUserView(this.getView());
     }
@@ -207,6 +225,46 @@ public class NavigationDrawerFragment extends Fragment {
 
         tv1.setText(this.mUser.getName());
         tv2.setText(this.mUser.getUsername());
+    }
+
+    private void selectAccountItem(int position) {
+        // TODO: Clear map when an invalid selection is made
+        if (this.mUser == null) {
+            return;
+        }
+        List<Account> accounts = this.mUser.getAccounts();
+        if (accounts == null || accounts.isEmpty() || position < 0 || accounts.size() <= position) {
+            return;
+        }
+        Account account = accounts.get(position);
+        if (account == null) {
+            return;
+        }
+
+        if (this.mCallbacks != null) {
+            mCallbacks.onAccountSelected(position);
+        }
+
+        setupAccount(account);
+    }
+
+    private void setupAccount(Account account) {
+        List<Trackable> trackables = account.getTrackables();
+        if (trackables == null) {
+            Log.d(TAG, "Null trackables");
+            return;
+        }
+
+        if (trackables.isEmpty()) {
+            Log.d(TAG, "Empty trackables");
+            return;
+        }
+
+        mDrawerListView.setAdapter(new ArrayAdapter<Trackable>(
+                getActionBar().getThemedContext(),
+                R.layout.layout_list_item_active,
+                R.id.text,
+                trackables));
     }
 
     private void selectItem(AdapterView<?> parent, int position) {
@@ -226,7 +284,7 @@ public class NavigationDrawerFragment extends Fragment {
             mDrawerLayout.closeDrawer(mFragmentContainerView);
         }
         if (mCallbacks != null) {
-            mCallbacks.onNavigationDrawerItemSelected(position);
+            mCallbacks.onItemSelected(position);
         }
 
         if (parent != null) {
@@ -318,7 +376,8 @@ public class NavigationDrawerFragment extends Fragment {
         /**
          * Called when an item in the navigation drawer is selected.
          */
-        void onNavigationDrawerItemSelected(int position);
+        void onItemSelected(int position);
+        void onAccountSelected(int position);
     }
 
     public void processExtras(Bundle extras) {
@@ -329,6 +388,14 @@ public class NavigationDrawerFragment extends Fragment {
             return;
         }
         this.mUser = Serialization.getGsonInstance().fromJson(extras.getString(ARG_USER_JSON), User.class);
+    }
+
+    public void reloadAccount(Account a) {
+        this.setupAccount(a);
+    }
+
+    public void onTrackableReady(Trackable t) {
+        Log.d(TAG, "Trackable Ready: " + t);
     }
 
 }

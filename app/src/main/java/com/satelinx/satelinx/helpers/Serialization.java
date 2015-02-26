@@ -14,6 +14,7 @@ public class Serialization {
     public static Gson getGsonInstance() {
         return new GsonBuilder()
                 .registerTypeAdapter(User.class, new UserTypeAdapter())
+                .setDateFormat("yyyy-MM-dd HH:mm:ss")
                 .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
                 .create();
     }

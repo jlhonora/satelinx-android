@@ -1,7 +1,10 @@
 package com.satelinx.satelinx.helpers;
 
 import com.satelinx.satelinx.models.Account;
+import com.satelinx.satelinx.models.Coordinate;
 import com.satelinx.satelinx.models.User;
+
+import java.util.List;
 
 import retrofit.http.GET;
 import retrofit.http.Header;
@@ -24,5 +27,8 @@ public interface SatelinxSession {
 
     @GET("/accounts/{account_id}")
     Account populate(@Path("account_id") long accountId, @Header(AUTH_HEADER) String authHeader);
+
+    @GET("/trackables/{trackable_id}/show_date/{date}")
+    List<Coordinate> showDate(@Path("trackable_id") long trackableId, @Path("date") String date, @Header(AUTH_HEADER) String authHeader);
 
 }

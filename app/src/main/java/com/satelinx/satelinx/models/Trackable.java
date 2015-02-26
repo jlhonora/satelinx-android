@@ -7,6 +7,7 @@ import com.satelinx.satelinx.helpers.Serialization;
  * Created by jlh on 1/17/15.
  */
 public class Trackable {
+    public long id;
     public String identifier;
     public String type;
     public String sub_type;
@@ -24,5 +25,10 @@ public class Trackable {
 
     public Coordinate getLastCoordinate() {
         return this.last_coordinate;
+    }
+
+    @Override
+    public String toString() {
+        return this.identifier;
     }
 }

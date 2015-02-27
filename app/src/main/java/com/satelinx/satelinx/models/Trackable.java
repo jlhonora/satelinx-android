@@ -1,5 +1,7 @@
 package com.satelinx.satelinx.models;
 
+import android.content.Context;
+
 import com.google.gson.JsonObject;
 import com.satelinx.satelinx.helpers.Serialization;
 
@@ -27,8 +29,32 @@ public class Trackable {
         return this.last_coordinate;
     }
 
+    public boolean hasValidLastCoordinate() {
+        // Exact 0.0 coordinates are usually an error
+        if (last_coordinate == null          ||
+                last_coordinate.latitude  == 0.0 ||
+                last_coordinate.longitude == 0.0) {
+            return false;
+        }
+        return true;
+    }
+
     @Override
     public String toString() {
         return this.identifier;
+    }
+
+    public String getSnippet(Context ctx) {
+        String snippet = "";
+        if (this.driver_name != null) {
+            snippet += this.driver_name + "\r\n";
+        }
+        if (!this.hasValidLastCoordinate()) {
+            return snippet;
+        }
+        Coordinate lastCoordinate = this.last_coordinate;
+
+        snippet += lastCoordinate.getSnippet(ctx);
+        return snippet;
     }
 }

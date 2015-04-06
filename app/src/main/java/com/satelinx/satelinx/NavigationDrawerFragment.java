@@ -3,6 +3,7 @@ package com.satelinx.satelinx;
 import android.app.Activity;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
@@ -25,12 +26,17 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.doomonafireball.betterpickers.calendardatepicker.CalendarDatePickerDialog;
 import com.satelinx.satelinx.helpers.Serialization;
 import com.satelinx.satelinx.models.Account;
 import com.satelinx.satelinx.models.Trackable;
 import com.satelinx.satelinx.models.User;
 
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Fragment used for managing interactions for and presentation of a navigation drawer.
@@ -53,6 +59,11 @@ public class NavigationDrawerFragment extends Fragment {
     private static final String PREF_USER_LEARNED_DRAWER = "navigation_drawer_learned";
 
     private static final String ARG_USER_JSON = "user_json";
+
+    /**
+     * The date format to use to display the selected date
+     */
+    private static final String DATE_FORMAT = "yyyy-MM-dd";
 
     /**
      * A pointer to the current callbacks instance (the Activity).
@@ -268,6 +279,64 @@ public class NavigationDrawerFragment extends Fragment {
     }
 
     private void selectItem(AdapterView<?> parent, int position) {
+        if (position == mCurrentSelectedPosition) {
+            // Show date dialog
+            selectItemDate(parent, position);
+        } else {
+            performItemSelection(parent, position);
+        }
+    }
+
+    private void selectItemDate(final AdapterView<?> parent, final int position) {
+        final Date preloadedDate = getPreloadDate(parent, position);
+        final Calendar cal = Calendar.getInstance();
+        cal.setTime(preloadedDate);
+        // Create date picker listener.
+        CalendarDatePickerDialog.OnDateSetListener dateSetListener = new CalendarDatePickerDialog.OnDateSetListener() {
+            @Override
+            public void onDateSet(CalendarDatePickerDialog dialog, int year, int monthOfYear, int dayOfMonth) {
+                String date = String.format("%d-%d-%d", year, monthOfYear, dayOfMonth);
+                performItemSelection(parent, position, date);
+            }
+        };
+
+        // Show date picker dialog.
+        CalendarDatePickerDialog dialog = new CalendarDatePickerDialog();
+        dialog.setOnDateSetListener(dateSetListener);
+        dialog.initialize(dateSetListener,
+                cal.get(Calendar.YEAR),
+                cal.get(Calendar.MONTH),
+                cal.get(Calendar.DAY_OF_MONTH));
+
+        dialog.show(getFragmentManager(), "date_picker");
+    }
+
+    protected Date getPreloadDate(AdapterView<?> parent, int position) {
+        Date preloadedDate = new Date();
+        if (parent == null || parent.getChildCount() <= position) {
+            return preloadedDate;
+        }
+        View selectedView = parent.getChildAt(position);
+        if (selectedView == null) {
+            return preloadedDate;
+        }
+        TextView dateView = (TextView) selectedView.findViewById(R.id.date_text);
+        if (dateView == null || dateView.getText().length() == 0) {
+            return preloadedDate;
+        }
+
+        SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT, Locale.ENGLISH);
+        try {
+            return sdf.parse(dateView.getText().toString());
+        } catch (java.text.ParseException e) {
+            return preloadedDate;
+        }
+    }
+    protected void performItemSelection(AdapterView<?> parent, int position) {
+        performItemSelection(parent, position, "last");
+    }
+
+    protected void performItemSelection(AdapterView<?> parent, int position, String date) {
         if (parent != null) {
             for (int i = parent.getFirstVisiblePosition(); i < parent.getLastVisiblePosition(); i++) {
                 View v = parent.getChildAt(i);
@@ -284,7 +353,7 @@ public class NavigationDrawerFragment extends Fragment {
             mDrawerLayout.closeDrawer(mFragmentContainerView);
         }
         if (mCallbacks != null) {
-            mCallbacks.onItemSelected(position);
+            mCallbacks.onItemSelected(position, date);
         }
 
         if (parent != null) {
@@ -298,7 +367,14 @@ public class NavigationDrawerFragment extends Fragment {
             return;
         }
         View indicator = v.findViewById(R.id.indicator);
-        indicator.setVisibility(active ? View.VISIBLE : View.INVISIBLE);
+        TextView textView = (TextView) v.findViewById(R.id.text);
+        if (active) {
+            textView.setTypeface(textView.getTypeface(), Typeface.BOLD);
+            indicator.setVisibility(View.VISIBLE);
+        } else {
+            textView.setTypeface(textView.getTypeface(), Typeface.NORMAL);
+            indicator.setVisibility(View.INVISIBLE);
+        }
     }
 
     @Override
@@ -377,6 +453,7 @@ public class NavigationDrawerFragment extends Fragment {
          * Called when an item in the navigation drawer is selected.
          */
         void onItemSelected(int position);
+        void onItemSelected(int position, String date);
         void onAccountSelected(int position);
     }
 
@@ -395,7 +472,32 @@ public class NavigationDrawerFragment extends Fragment {
     }
 
     public void onTrackableReady(Trackable t) {
+        onTrackableReady(t, null);
+    }
+
+    public void onTrackableReady(Trackable t, Date d) {
         Log.d(TAG, "Trackable Ready: " + t);
+        if (t == null) {
+            return;
+        }
+
+        View v = mDrawerListView.getChildAt(mCurrentSelectedPosition);
+        if (v == null) {
+            return;
+        }
+
+        TextView dateView = (TextView) v.findViewById(R.id.date_text);
+        if (dateView == null) {
+            return;
+        }
+
+        if (d == null) {
+            dateView.setVisibility(View.GONE);
+        } else {
+            SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT, Locale.ENGLISH);
+            dateView.setText(sdf.format(d));
+            dateView.setVisibility(View.VISIBLE);
+        }
     }
 
 }

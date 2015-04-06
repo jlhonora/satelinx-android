@@ -20,6 +20,7 @@ import com.satelinx.satelinx.events.AuthEvent;
 import com.satelinx.satelinx.events.AuthFailedEvent;
 import com.satelinx.satelinx.events.AuthRequestEvent;
 import com.satelinx.satelinx.events.AuthSuccessEvent;
+import com.satelinx.satelinx.helpers.EnvironmentManager;
 import com.satelinx.satelinx.helpers.SatelinxSession;
 import com.satelinx.satelinx.helpers.Serialization;
 import com.satelinx.satelinx.models.User;
@@ -50,10 +51,15 @@ public class LoginActivity extends ActionBarActivity {
 
         // Set up the login form.
         mUsernameView = (EditText) findViewById(R.id.username);
-        mUsernameView.setText("demo");
 
         mPasswordView = (EditText) findViewById(R.id.password);
-        mPasswordView.setText("satelinx2011");
+
+        // Put credentials only in dev environment
+        if (EnvironmentManager.isDevelopment()) {
+            mUsernameView.setText("demo");
+            mPasswordView.setText("satelinx2011");
+        }
+
         mPasswordView.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView textView, int id, KeyEvent keyEvent) {

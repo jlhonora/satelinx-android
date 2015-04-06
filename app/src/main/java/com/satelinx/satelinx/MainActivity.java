@@ -25,6 +25,7 @@ import com.satelinx.satelinx.models.Coordinate;
 import com.satelinx.satelinx.models.Trackable;
 import com.satelinx.satelinx.models.User;
 
+import java.util.Date;
 import java.util.List;
 
 import de.greenrobot.event.EventBus;
@@ -96,6 +97,11 @@ public class MainActivity extends ActionBarActivity
 
     @Override
     public void onItemSelected(int position) {
+        onItemSelected(position, "last");
+    }
+
+    @Override
+    public void onItemSelected(int position, String date) {
         Log.d(TAG, "Selected item on position " + position);
         if (this.mSelectedAccount == null) {
             return;
@@ -109,9 +115,7 @@ public class MainActivity extends ActionBarActivity
             return;
         }
         Log.d(TAG, "Sending event");
-        //SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-        //EventBus.getDefault().post(new SelectTrackableEvent(trackable, sdf.format(new Date())));
-        EventBus.getDefault().post(new SelectTrackableEvent(trackable, "last"));
+        EventBus.getDefault().post(new SelectTrackableEvent(trackable, date));
     }
 
     public void onAccountSelected(Account account) {
@@ -140,7 +144,12 @@ public class MainActivity extends ActionBarActivity
 
     public void onTrackableReady(Trackable trackable, List<Coordinate> coordinates) {
         if (mNavigationDrawerFragment != null) {
-            mNavigationDrawerFragment.onTrackableReady(trackable);
+            Date date = null;
+            if (coordinates != null && !coordinates.isEmpty()) {
+                Coordinate c = coordinates.get(0);
+                date = c.sent_at_date;
+            }
+            mNavigationDrawerFragment.onTrackableReady(trackable, date);
         }
         if (mMainFragment != null) {
             mMainFragment.loadTrackable(trackable, coordinates);

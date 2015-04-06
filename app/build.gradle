@@ -34,4 +34,5 @@ dependencies {
     compile 'com.squareup.okhttp:okhttp:2.1.0'
     compile 'com.google.code.gson:gson:2.3.1'
     compile 'com.joanzapata.android:android-iconify:1.0.9'
+    compile 'com.doomonafireball.betterpickers:library:1.5.5'
 }

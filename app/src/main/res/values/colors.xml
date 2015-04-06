@@ -11,4 +11,5 @@
     <color name="theme_primary_light">@color/primary_green</color>
     <color name="theme_accent_2">#e91e63</color>
     <color name="body_text_1">#de000000</color>
+    <color name="body_text_2">#ff555555</color>
 </resources>

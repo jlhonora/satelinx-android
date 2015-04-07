@@ -239,7 +239,12 @@ public class MainFragment extends Fragment {
     }
 
     public BitmapDescriptor getCustomMarker(final Coordinate coordinate) {
-        final Iconify.IconValue iconValue = Iconify.IconValue.fa_arrow_circle_up;
+        Iconify.IconValue iconValueTemp = Iconify.IconValue.fa_arrow_circle_up;
+        if (coordinate.heading == 0) {
+            iconValueTemp = Iconify.IconValue.fa_circle_o;
+        }
+
+        final Iconify.IconValue iconValue = iconValueTemp;
 
         IconDrawable id = new IconDrawable(this.getActivity(), iconValue) {
 

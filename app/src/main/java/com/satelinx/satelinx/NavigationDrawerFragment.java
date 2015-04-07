@@ -368,12 +368,14 @@ public class NavigationDrawerFragment extends Fragment {
         }
         View indicator = v.findViewById(R.id.indicator);
         TextView textView = (TextView) v.findViewById(R.id.text);
+        TextView dateView = (TextView) v.findViewById(R.id.date_text);
         if (active) {
             textView.setTypeface(textView.getTypeface(), Typeface.BOLD);
             indicator.setVisibility(View.VISIBLE);
         } else {
             textView.setTypeface(textView.getTypeface(), Typeface.NORMAL);
             indicator.setVisibility(View.INVISIBLE);
+            dateView.setVisibility(View.GONE);
         }
     }
 

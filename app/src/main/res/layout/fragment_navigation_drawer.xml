@@ -11,6 +11,37 @@
     <include
         layout="@layout/layout_drawer_account" />
 
+    <LinearLayout
+        android:paddingLeft="12dip"
+        android:paddingTop="12dip"
+        android:paddingBottom="12dip"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/logout_section"
+        android:orientation="horizontal"
+        >
+        <IconTextView
+            style="@style/TextViewDark"
+            android:text="{fa-sign-out}"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            style="@style/TextViewDark"
+            android:layout_width="0dip"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:paddingLeft="5dip"
+            android:text="@string/logout"
+            android:gravity="left|center_vertical" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0.5dip"
+        android:background="@color/body_text_2"
+        />
+
     <ListView
         android:id="@+id/drawer_list"
         android:layout_width="match_parent"

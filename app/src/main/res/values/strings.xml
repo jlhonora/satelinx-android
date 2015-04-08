@@ -22,4 +22,5 @@
     <string name="select_failed_no_coordinates">There are no coordinates to show</string>
     <string name="select_failed_bad_request">There was an error loading your request</string>
 
+    <string name="logout">Logout</string>
 </resources>

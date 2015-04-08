@@ -25,14 +25,15 @@
 
 
         <TextView
+            style="@style/TextViewLight"
             android:id="@+id/drawer_text1"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:text="@string/test_name"
-            android:background="#00000000"
-            android:textColor="#ffffffff" />
+            android:background="#00000000" />
 
         <TextView
+            style="@style/TextViewLight"
             android:id="@+id/drawer_text2"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
@@ -41,6 +42,7 @@
             android:textColor="#ffeeeeee" />
 
         <Spinner
+            android:paddingLeft="0dip"
             android:id="@+id/drawer_spinner"
             android:background="#00000000"
             android:textColor="#ffeeeeee"

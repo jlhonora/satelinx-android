@@ -203,11 +203,15 @@ public class NavigationDrawerFragment extends Fragment {
 
         mDrawerLayout.setDrawerListener(mDrawerToggle);
 
-        mDrawerSpinner.setAdapter(new ArrayAdapter<Account>(
+        ArrayAdapter<Account> accountsAdapter = new ArrayAdapter<Account>(
                 getActionBar().getThemedContext(),
-                R.layout.layout_list_item_active,
-                R.id.text,
-                this.mUser.getAccounts()));
+                R.layout.layout_list_item_account,
+                this.mUser.getAccounts());
+
+        accountsAdapter.setDropDownViewResource(R.layout.layout_list_item_account_dropdown);
+        accountsAdapter.notifyDataSetChanged();
+
+        mDrawerSpinner.setAdapter(accountsAdapter);
 
         mDrawerSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
 
@@ -221,7 +225,6 @@ public class NavigationDrawerFragment extends Fragment {
 
             }
         });
-        // mDrawerSpinner.setItemChecked(mCurrentSelectedPosition, true);
         selectAccountItem(0);
 
         setupUserView(this.getView());

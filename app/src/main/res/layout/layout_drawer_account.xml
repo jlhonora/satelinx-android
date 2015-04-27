@@ -44,9 +44,6 @@
         <Spinner
             android:paddingLeft="0dip"
             android:id="@+id/drawer_spinner"
-            android:background="#00000000"
-            android:textColor="#ffeeeeee"
-            android:color="#ffeeeeee"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"/>
 

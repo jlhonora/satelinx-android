@@ -47,18 +47,16 @@ public class RequestManager {
         Response response = null;
         try {
             response = client.newCall(request).execute();
+            if (response == null || !response.isSuccessful()) {
+                if (handler != null) {
+                    handler.onFailure(new IOException("Error in request"));
+                }
+            } else {
+                handler.onSuccess(gson.fromJson(response.body().charStream(), JsonObject.class));
+            }
         } catch (IOException e) {
             handler.onFailure(e);
         }
-
-        if (response == null || !response.isSuccessful()) {
-            if (handler != null) {
-                handler.onFailure(new IOException("Error in request"));
-            }
-        } else {
-            handler.onSuccess(gson.fromJson(response.body().charStream(), JsonObject.class));
-        }
-
     }
 
     public static class ResponseHandler {

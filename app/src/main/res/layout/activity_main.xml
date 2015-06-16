@@ -17,10 +17,11 @@
 
         <android.support.v7.widget.Toolbar
             android:id="@+id/toolbar"
+            android:background="@color/theme_primary"
             android:layout_height="wrap_content"
             android:layout_width="match_parent"
             android:minHeight="?attr/actionBarSize"
-            style="@style/ActionBarStyle"
+            android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
             />
 
         <!-- As the main content view, the view below consumes the entire

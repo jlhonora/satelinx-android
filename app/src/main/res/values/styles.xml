@@ -21,6 +21,7 @@
         <item name="colorAccent">@color/theme_accent_2</item>
 
         <item name="android:textColorLink">@color/theme_accent_2</item>
+
     </style>
 
     <style name="Theme.Satelinx.NoActionBar" parent="Theme.Satelinx.Base">
@@ -43,12 +44,6 @@
     </style>
 
     <style name="Widget.Satelinx.SearchView" parent="Widget.AppCompat.SearchView" />
-
-    <style name="ActionBarStyle" parent="Widget.AppCompat.Toolbar">
-        <item name="android:background">@color/theme_primary</item>
-        <item name="theme">@style/ThemeOverlay.AppCompat.Dark.ActionBar</item>
-        <item name="popupTheme">@style/ThemeOverlay.AppCompat.Light</item>
-    </style>
 
     <style name="TextViewStyle">
         <item name="android:textSize">16sp</item>

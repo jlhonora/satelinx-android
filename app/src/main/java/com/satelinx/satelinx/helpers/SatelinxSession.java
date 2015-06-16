@@ -6,6 +6,7 @@ import com.satelinx.satelinx.models.User;
 
 import java.util.List;
 
+import retrofit.http.Body;
 import retrofit.http.GET;
 import retrofit.http.Header;
 import retrofit.http.POST;
@@ -23,7 +24,7 @@ public interface SatelinxSession {
     User getSalt(@Path("username") String username);
 
     @POST("/sessions/{username}/authenticate")
-    User authenticate(@Path("username") String username, @Header(AUTH_HEADER) String authHeader);
+    User authenticate(@Path("username") String username, @Header(AUTH_HEADER) String authHeader, @Body String body);
 
     @GET("/accounts/{account_id}")
     Account populate(@Path("account_id") long accountId, @Header(AUTH_HEADER) String authHeader);

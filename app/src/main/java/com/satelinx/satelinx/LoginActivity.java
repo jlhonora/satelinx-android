@@ -2,7 +2,7 @@ package com.satelinx.satelinx;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.v7.app.ActionBarActivity;
+import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -34,7 +34,7 @@ import retrofit.converter.GsonConverter;
 /**
  * A login screen that offers login via username/password.
  */
-public class LoginActivity extends ActionBarActivity {
+public class LoginActivity extends AppCompatActivity {
 
     public static final String TAG = LoginActivity.class.getSimpleName();
 
@@ -176,7 +176,7 @@ public class LoginActivity extends ActionBarActivity {
              */
             User user = session.getSalt(event.getUsername());
             user.buildAuthorizationHash(event.getPassword());
-            User authUser = session.authenticate(user.getUsername(), user.getAuthorizationHash());
+            User authUser = session.authenticate(user.getUsername(), user.getAuthorizationHash(), "");
 
             // Reapply the auth hash from the previous user
             authUser.setAuthorizationHash(user.getAuthorizationHash());

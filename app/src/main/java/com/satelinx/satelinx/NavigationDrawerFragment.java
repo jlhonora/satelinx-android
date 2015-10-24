@@ -1,6 +1,7 @@
 package com.satelinx.satelinx;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.graphics.Typeface;
@@ -127,6 +128,16 @@ public class NavigationDrawerFragment extends Fragment {
         });
 
         mDrawerSpinner = (Spinner) drawerView.findViewById(R.id.drawer_spinner);
+
+        View logoutButton = drawerView.findViewById(R.id.logout_section);
+        logoutButton.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                performLogout();
+            }
+
+        });
 
         return drawerView;
     }
@@ -503,6 +514,14 @@ public class NavigationDrawerFragment extends Fragment {
             dateView.setText(sdf.format(d));
             dateView.setVisibility(View.VISIBLE);
         }
+    }
+
+    public void performLogout() {
+        this.getActivity().finish();
+
+        Intent intent = new Intent(this.getContext(), LoginActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        startActivity(intent);
     }
 
 }

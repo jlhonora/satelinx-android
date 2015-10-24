@@ -16,7 +16,8 @@ public class EnvironmentManager {
     }
 
     public static final String PRODUCTION_IP = "http://satelinx.com/api/v1";
-    public static final String DEVELOPMENT_IP = "http://192.168.2.92:3000/api/v1";
+    public static final String DEVELOPMENT_IP = "http://satelinx.com/api/v1";
+    //public static final String DEVELOPMENT_IP = "http://192.168.2.92:3000/api/v1";
 
     private static final BuildType BUILD_TYPE = BuildType.DEVELOPMENT;
 

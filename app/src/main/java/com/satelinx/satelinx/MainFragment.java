@@ -121,7 +121,7 @@ public class MainFragment extends Fragment {
         // Custom layout for infoWindows
         mMap.setInfoWindowAdapter(new CoordinateInfoAdapter(LayoutInflater.from(this.getActivity())));
 
-        List<Coordinate> boundsCoordinates = new ArrayList<Coordinate>();
+        List<Coordinate> boundsCoordinates = new ArrayList<>();
         for (Trackable t : trackables) {
             Coordinate c = setupTrackable(t);
             if (c == null) {

@@ -20,13 +20,17 @@ import com.satelinx.satelinx.events.AuthEvent;
 import com.satelinx.satelinx.events.AuthFailedEvent;
 import com.satelinx.satelinx.events.AuthRequestEvent;
 import com.satelinx.satelinx.events.AuthSuccessEvent;
-import com.satelinx.satelinx.helpers.EnvironmentManager;
 import com.satelinx.satelinx.helpers.SatelinxSession;
 import com.satelinx.satelinx.helpers.Serialization;
 import com.satelinx.satelinx.models.User;
 
-import de.greenrobot.event.EventBus;
-import de.greenrobot.event.SubscriberExceptionEvent;
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.SubscriberExceptionEvent;
+import org.greenrobot.eventbus.ThreadMode;
+
+import butterknife.BindView;
+import butterknife.ButterKnife;
 import retrofit.RestAdapter;
 import retrofit.converter.GsonConverter;
 
@@ -38,27 +42,16 @@ public class LoginActivity extends AppCompatActivity {
 
     public static final String TAG = LoginActivity.class.getSimpleName();
 
-    // UI references.
-    private EditText mUsernameView;
-    private EditText mPasswordView;
-    private CircularProgressButton mUsernameSignInButton;
+    @BindView(R.id.username)     protected EditText mUsernameView;
+    @BindView(R.id.password)     protected EditText mPasswordView;
+    @BindView(R.id.login_button) protected CircularProgressButton mUsernameSignInButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EventBus.getDefault().register(this);
         setContentView(R.layout.activity_login);
-
-        // Set up the login form.
-        mUsernameView = (EditText) findViewById(R.id.username);
-
-        mPasswordView = (EditText) findViewById(R.id.password);
-
-        // Put credentials only in dev environment
-        if (EnvironmentManager.isDevelopment()) {
-            mUsernameView.setText("demo");
-            mPasswordView.setText("satelinx2011");
-        }
+        ButterKnife.bind(this);
 
         mPasswordView.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
@@ -71,7 +64,6 @@ public class LoginActivity extends AppCompatActivity {
             }
         });
 
-        mUsernameSignInButton = (CircularProgressButton) findViewById(R.id.login_button);
         mUsernameSignInButton.setIndeterminateProgressMode(true);
         mUsernameSignInButton.setOnClickListener(new OnClickListener() {
             @Override
@@ -79,7 +71,6 @@ public class LoginActivity extends AppCompatActivity {
                 attemptLogin();
             }
         });
-
     }
 
     /**
@@ -141,21 +132,13 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     @Override
-    public void onStart() {
-        super.onStart();
-    }
-
-    @Override
-    public void onStop() {
-        super.onStop();
-    }
-
-    @Override
     public void onDestroy() {
         EventBus.getDefault().unregister(this);
         super.onDestroy();
     }
 
+    @Subscribe(threadMode = ThreadMode.ASYNC)
+    @SuppressWarnings("unused")
     public void onEventBackgroundThread(AuthRequestEvent event) {
         Gson gson = Serialization.getGsonInstance();
         RestAdapter restAdapter = new RestAdapter.Builder()
@@ -181,8 +164,6 @@ public class LoginActivity extends AppCompatActivity {
             // Reapply the auth hash from the previous user
             authUser.setAuthorizationHash(user.getAuthorizationHash());
 
-            Log.d(TAG, "User's auth hash: " + authUser.getAuthorizationHash());
-
             AuthSuccessEvent successEvent = new AuthSuccessEvent(user.getUsername(), authUser.toJson());
             EventBus.getDefault().post(successEvent);
         } catch (Exception e) {
@@ -194,23 +175,27 @@ public class LoginActivity extends AppCompatActivity {
         }
     }
 
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    @SuppressWarnings("unused")
     public void onEventMainThread(AuthSuccessEvent event) {
         mUsernameSignInButton.setProgress(100);
         startActivityWithUser(event.userJson);
     }
 
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    @SuppressWarnings("unused")
     public void onEventMainThread(AuthFailedEvent event) {
         mUsernameSignInButton.setProgress(-1);
     }
 
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    @SuppressWarnings("unused")
     public void onEventMainThread(SubscriberExceptionEvent e) {
         Log.d(TAG, "Exception event");
         mUsernameSignInButton.setProgress(-1);
     }
 
     protected void startActivityWithUser(JsonObject userJson) {
-        Log.d(TAG, "Printing user Json");
-        Log.d(TAG, Serialization.getPrettyPrintedString(userJson));
         if (userJson == null) {
             Toast.makeText(this, R.string.error_no_user, Toast.LENGTH_LONG).show();
             return;

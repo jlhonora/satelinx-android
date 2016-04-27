@@ -26,10 +26,12 @@ import com.satelinx.satelinx.models.Coordinate;
 import com.satelinx.satelinx.models.Trackable;
 import com.satelinx.satelinx.models.User;
 
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
+
 import java.util.Date;
 import java.util.List;
-
-import de.greenrobot.event.EventBus;
 
 
 public class MainActivity extends AppCompatActivity
@@ -173,7 +175,10 @@ public class MainActivity extends AppCompatActivity
     }
 
     public void restoreActionBar() {
-        getSupportActionBar().setTitle(mTitle);
+        ActionBar bar = getSupportActionBar();
+        if (bar != null) {
+            bar.setTitle(mTitle);
+        }
     }
 
     @Override
@@ -218,19 +223,8 @@ public class MainActivity extends AppCompatActivity
         startActivity(new Intent(this, LoginActivity.class));
     }
 
-    /*protected boolean setupUser() {
-        Log.d(TAG, "Setup user");
-        if (this.mUser == null) {
-            return false;
-        }
-        Account a = this.mUser.getAccount(0);
-        if (a == null) {
-            return false;
-        }
-        EventBus.getDefault().post(new SelectAccountEvent(a, this.mUser.getAuthorizationHash()));
-        return true;
-    }*/
-
+    @Subscribe(threadMode = ThreadMode.ASYNC)
+    @SuppressWarnings("unused")
     public void onEventBackgroundThread(SelectAccountEvent e) {
         try {
             Account account = ApiManager.getSession().populate(e.account.getId(), e.authorizationHash);
@@ -247,14 +241,20 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    @SuppressWarnings("unused")
     public void onEventMainThread(SelectAccountFailedEvent e) {
         Toast.makeText(this, "Error selecting account " + e.account.getName(), Toast.LENGTH_LONG).show();
     }
 
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    @SuppressWarnings("unused")
     public void onEventMainThread(SelectAccountReadyEvent e) {
         onAccountReady(e.account);
     }
 
+    @Subscribe(threadMode = ThreadMode.ASYNC)
+    @SuppressWarnings("unused")
     public void onEventBackgroundThread(SelectTrackableEvent e) {
         try {
             List<Coordinate> coordinates = ApiManager.getSession().showDate(e.trackable.id, e.date, this.mUser.getAuthorizationHash());
@@ -275,10 +275,14 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    @SuppressWarnings("unused")
     public void onEventMainThread(SelectTrackableReadyEvent e) {
         onTrackableReady(e.trackable, e.coordinates);
     }
 
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    @SuppressWarnings("unused")
     public void onEventMainThread(SelectTrackableFailedEvent e) {
         Log.d(TAG, "Trackable failed with status: " + e.status);
         int resId = -1;

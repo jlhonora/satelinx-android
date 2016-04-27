@@ -39,6 +39,9 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
+
 /**
  * Fragment used for managing interactions for and presentation of a navigation drawer.
  * See the <a href="https://developer.android.com/design/patterns/navigation-drawer.html#Interaction">
@@ -76,10 +79,10 @@ public class NavigationDrawerFragment extends Fragment {
      */
     private ActionBarDrawerToggle mDrawerToggle;
 
-    private DrawerLayout mDrawerLayout;
-    private Spinner mDrawerSpinner;
-    private ListView mDrawerListView;
+    @BindView(R.id.drawer_spinner) protected Spinner mDrawerSpinner;
+    @BindView(R.id.drawer_list)    protected ListView mDrawerListView;
     private View mFragmentContainerView;
+    private DrawerLayout mDrawerLayout;
 
     private int mCurrentSelectedPosition = 0;
     private boolean mFromSavedInstanceState;
@@ -119,15 +122,13 @@ public class NavigationDrawerFragment extends Fragment {
                              Bundle savedInstanceState) {
         View drawerView = inflater.inflate(
                 R.layout.fragment_navigation_drawer, container, false);
-        mDrawerListView = (ListView) drawerView.findViewById(R.id.drawer_list);
+        ButterKnife.bind(this, drawerView);
         mDrawerListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 selectItem(parent, position);
             }
         });
-
-        mDrawerSpinner = (Spinner) drawerView.findViewById(R.id.drawer_spinner);
 
         View logoutButton = drawerView.findViewById(R.id.logout_section);
         logoutButton.setOnClickListener(new View.OnClickListener() {
@@ -214,7 +215,7 @@ public class NavigationDrawerFragment extends Fragment {
 
         mDrawerLayout.setDrawerListener(mDrawerToggle);
 
-        ArrayAdapter<Account> accountsAdapter = new ArrayAdapter<Account>(
+        ArrayAdapter<Account> accountsAdapter = new ArrayAdapter<>(
                 getActionBar().getThemedContext(),
                 R.layout.layout_list_item_account,
                 this.mUser.getAccounts());
@@ -285,7 +286,7 @@ public class NavigationDrawerFragment extends Fragment {
             return;
         }
 
-        mDrawerListView.setAdapter(new ArrayAdapter<Trackable>(
+        mDrawerListView.setAdapter(new ArrayAdapter<>(
                 getActionBar().getThemedContext(),
                 R.layout.layout_list_item_active,
                 R.id.text,
@@ -309,7 +310,7 @@ public class NavigationDrawerFragment extends Fragment {
         CalendarDatePickerDialog.OnDateSetListener dateSetListener = new CalendarDatePickerDialog.OnDateSetListener() {
             @Override
             public void onDateSet(CalendarDatePickerDialog dialog, int year, int monthOfYear, int dayOfMonth) {
-                String date = String.format("%d-%d-%d", year, monthOfYear, dayOfMonth);
+                String date = String.format(Locale.ENGLISH, "%d-%d-%d", year, monthOfYear, dayOfMonth);
                 performItemSelection(parent, position, date);
             }
         };
@@ -358,7 +359,6 @@ public class NavigationDrawerFragment extends Fragment {
             }
         }
 
-        Log.d(TAG, "Selected item at position " + position);
         mCurrentSelectedPosition = position;
         if (mDrawerListView != null) {
             mDrawerListView.setItemChecked(position, true);
@@ -492,7 +492,6 @@ public class NavigationDrawerFragment extends Fragment {
     }
 
     public void onTrackableReady(Trackable t, Date d) {
-        Log.d(TAG, "Trackable Ready: " + t);
         if (t == null) {
             return;
         }
